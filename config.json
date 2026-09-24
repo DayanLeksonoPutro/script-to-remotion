@@ -1,0 +1,27 @@
+{
+  "llm": {
+    "provider": "openai_compatible",
+    "base_url": "",
+    "api_key": "",
+    "model": ""
+  },
+  "material_source": "local",
+  "local_material_dir": "testdata",
+  "pexels_api_key": "",
+  "voice": "id-ID-ArdiNeural",
+  "voice_rate": 0,
+  "aspect": "9:16",
+  "fps": 30,
+  "bgm": "",
+  "bgm_volume": 0.2,
+  "scene_padding": 0.8,
+  "captions": {
+    "enabled": true,
+    "mode": "word",
+    "position": "bottom",
+    "font_size_px": 88,
+    "text_color": "#FFFFFF",
+    "active_color": "#FFD93D",
+    "dim_color": "#FFFFFF"
+  }
+}

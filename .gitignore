@@ -1,0 +1,18 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Node / Remotion
+node_modules/
+studio/.remotion/
+
+# Pipeline output (generated per-run)
+studio/public/stories/
+out/
+
+# Test assets (generated)
+testdata/
+
+# OS
+.DS_Store
