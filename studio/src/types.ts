@@ -12,6 +12,8 @@ export type CaptionConfig = {
   text_color: string;
   active_color: string;
   dim_color: string;
+  /** Font file inside studio/public/fonts (e.g. "BeVietnamPro-Bold.ttf"). */
+  font_name?: string;
 };
 
 export type Scene = {

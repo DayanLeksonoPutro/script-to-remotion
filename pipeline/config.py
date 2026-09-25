@@ -44,6 +44,7 @@ class Config:
             "text_color": "#FFFFFF",
             "active_color": "#FFD93D",
             "dim_color": "#FFFFFF",
+            "font_name": "UTM Kabel KT.ttf",
         }
     )
 

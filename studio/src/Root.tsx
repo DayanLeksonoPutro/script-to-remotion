@@ -22,6 +22,7 @@ function sampleStory(): StoryProps {
       text_color: "#FFFFFF",
       active_color: "#FFD93D",
       dim_color: "#9E9E9E",
+      font_name: "UTM Kabel KT.ttf",
     },
     scenes: [
       {

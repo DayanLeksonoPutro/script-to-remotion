@@ -134,7 +134,7 @@ Hasil: `out/<slug>/final.mp4`.
 | `ASPECT` / `aspect`          | `9:16`                   | `9:16` \| `16:9` \| `1:1` |
 | `BGM` / `bgm`                | —                        | path file audio BGM |
 | `BGM_VOLUME` / `bgm_volume`  | 0.2                      | 0–1 |
-| `captions.*`                 | (lihat `pipeline/config.py`) | posisi, ukuran, warna, mode |
+| `captions.*`                 | (lihat `pipeline/config.py`) | posisi, ukuran, warna, mode, `font_name` (file di `studio/public/fonts/`, default `UTM Kabel KT.ttf`) |
 
 ## kontrak `story.json`
 

@@ -8,8 +8,42 @@ import {
   Video,
   useCurrentFrame,
   interpolate,
+  delayRender,
+  continueRender,
 } from "remotion";
 import type { CaptionConfig, Scene, Story as StoryProps } from "./types";
+import { useCaptionFont } from "./fonts";
+
+let fontPromise: Promise<FontFace> | null = null;
+
+function loadCaptionFont(): Promise<FontFace> {
+  if (!fontPromise) {
+    const face = new FontFace(
+      "CaptionFont",
+      `url(${staticFile("/fonts/BeVietnamPro-Bold.ttf")}) format("truetype")`,
+      { weight: "800" },
+    );
+    fontPromise = face.load().then((loaded) => {
+      document.fonts.add(loaded);
+      return loaded;
+    });
+  }
+  return fontPromise;
+}
+
+const CaptionFontProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [ready, setReady] = React.useState(false);
+  const [handle] = React.useState(() => delayRender("loading caption font"));
+  React.useEffect(() => {
+    loadCaptionFont()
+      .then(() => setReady(true))
+      .finally(() => continueRender(handle));
+  }, [handle]);
+  if (!ready) {
+    return null;
+  }
+  return <>{children}</>;
+};
 
 function sceneFrameDuration(scene: Scene, fps: number): number {
   return Math.max(1, Math.round((scene.end - scene.start) * fps));
@@ -80,6 +114,7 @@ const WordCaptions: React.FC<{
   config: CaptionConfig;
   fps: number;
 }> = ({ captions, config, fps }) => {
+  const font = useCaptionFont(config.font_name);
   const frame = useCurrentFrame();
   const time = frame / fps;
 
@@ -135,9 +170,10 @@ const WordCaptions: React.FC<{
           return (
             <span
               key={index}
-              style={{
+style={{
+                fontFamily: font.family,
                 fontSize: config.font_size_px,
-                fontWeight: 800,
+                fontWeight: font.weight,
                 lineHeight: 1.25,
                 textAlign: "center",
                 margin: "0 6px",
@@ -197,7 +233,8 @@ export const Story: React.FC<StoryProps> = ({
   );
 
   return (
-    <AbsoluteFill style={{ width, height, backgroundColor: "#000" }}>
+    <CaptionFontProvider>
+      <AbsoluteFill style={{ width, height, backgroundColor: "#000" }}>
       {scenes.map((scene) => (
         <SceneSequence
           key={scene.index}
@@ -207,6 +244,7 @@ export const Story: React.FC<StoryProps> = ({
         />
       ))}
       {bgm ? <Audio src={staticFile(bgm)} volume={bgm_volume} loop /> : null}
-    </AbsoluteFill>
+      </AbsoluteFill>
+    </CaptionFontProvider>
   );
 };
