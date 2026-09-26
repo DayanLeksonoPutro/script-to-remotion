@@ -36,16 +36,20 @@ pipeline dan renderer. Jangan menambahkan aliran data paralel.
 │   ├── remotion.config.ts    #   set output/jpeg, Chrome executable
 │   ├── src/
 │   │   ├── index.ts          #   registerRoot
-│   │   ├── Root.tsx          #   Composition "Story", baca --props story.json
+│   │   ├── Root.tsx          #   Composition "Story" + "ShotVideo"
 │   │   ├── Story.tsx         #   template: scene + video + WordCaptions + BGM
-│   │   └── types.ts          #   tipe Story/Scene/CaptionConfig
+│   │   ├── ShotVideo.tsx     #   template: screenshot di tengah + hook + backdrop
+│   │   └── types.ts          #   tipe Story/Scene/CaptionConfig + ShotVideo
 │   └── public/               #   publicDir Remotion — ASET
+│       ├── backgrounds/      #   backdrop milik user (gambar/video), lihat katalog
 │       ├── fonts/            #   font untuk caption (lihat katalog di bawah)
 │       ├── songs/            #   BGM (lihat katalog di bawah)
 │       └── stories/<slug>/   #   hasil pipeline: script.txt, terms.json,
 │                             #   audio/, material/, bgm/, story.json
+│                             #   skill screenshot-video: shot/, shot.json
 ├── scripts/
 │   ├── render.mjs            #   node scripts/render.mjs <slug> → out/<slug>/final.mp4
+│   ├── render-shot.mjs       #   node scripts/render-shot.mjs <slug> [--still N]
 │   └── open.mjs              #   buka Remotion Studio preview
 ├── local_material/<x>/       #   sumber material lokal (config local_material_dir)
 ├── out/<slug>/               #   hasil render / kerja skill youtube-video
@@ -61,6 +65,7 @@ Dinyalakan otomatis saat opencode start. Kerjakan via mereka, jangan duplikasi.
 |---|---|---|
 | `short-video-script` | `.opencode/skills/short-video-script/` | `studio/public/stories/<slug>/script.txt` + `terms.json` (narasi + search term berurutan) |
 | `youtube-video` | `.opencode/skills/youtube-video/` | Re-edit video YouTube → hook/cerita bahasa Indonesia, `out/<slug>/final.mp4` via ffmpeg |
+| `screenshot-video` | `.opencode/skills/screenshot-video/` | Screenshot post media sosial → video story 9:16 (ss di tengah + background + musik + hook), `out/<slug>/final.mp4` via Remotion |
 
 ## Katalog aset — `studio/public/`
 
@@ -109,6 +114,21 @@ Memilih track: durasi tidak menentukan — renderer loop. Dengarkan/durasi tak
 penting; pilih berdasarkan mood topik. Jika user minta BGM di video yang
 dibangun manual, default-kan `output007.mp3` lalu beri tahu.
 
+### Backdrop (`studio/public/backgrounds/`)
+
+Milik user, dipakai skill `screenshot-video` lewat composition `ShotVideo`
+(`studio/src/ShotVideo.tsx`). Path di `shot.json` = `/backgrounds/<nama-file>`.
+
+| `background.type` | File | Perilaku |
+|---|---|---|
+| `solid` | — | Warna polos dari `background.color`. Default skill. |
+| `image` | `.jpg` `.png` `.webp` | Still, `objectFit: cover` + `blur` + scrim `dim`. |
+| `video` | `.mp4` `.mov` `.webm` | Loop, `muted`, plus `blur` + scrim `dim`. |
+
+Folder ini belum berisi aset — skill otomatis jatuh ke `solid` sampai user
+menaruh file. Jangan pernah hapus/timpa isinya. Detail di
+`studio/public/backgrounds/README.md`.
+
 ## Commands yang dipakai
 
 ```bash
@@ -126,6 +146,12 @@ cd studio && npx remotion studio --props=./public/stories/<slug>/story.json
 
 # render akhir
 node scripts/render.mjs "<slug>"                     # → out/<slug>/final.mp4
+
+# screenshot-video (skill, tanpa pipeline)
+python3 .opencode/skills/screenshot-video/helpers/build_shot.py \
+  --slug "<slug>" --images "<png>" --hook "<HOOK>" --emphasis "<frasa>"
+node scripts/render-shot.mjs "<slug>" --still 30     # → out/<slug>/preview.png
+node scripts/render-shot.mjs "<slug>"                # → out/<slug>/final.mp4
 
 # verifikasi (sebelum selesai kerja)
 cd studio && npm run typecheck                        # tsc
@@ -160,14 +186,42 @@ awal audio scene). `captions.font_name` (opsional, tanpa default string kosong)
 menyebut file font di `studio/public/fonts/` — resolved oleh `fonts.ts`
 (`FONT_MAP`); jika tidak dikenal/absent, pakai `UTM Kabel KT.ttf`.
 
+## Kontrak `shot.json` (composition `ShotVideo`)
+
+Kontrak props **terpisah** dari `story.json`, hanya dipakai skill
+`screenshot-video`. Tulisannya di `studio/public/stories/<slug>/shot.json`,
+dibaca `studio/src/ShotVideo.tsx` lewat `--props`. Tidak ada di pipeline
+Python — jangan disambung ke `pipeline/story.py`.
+
+Top-level: `version=1`, `subject`, `fps`, `width/height` (1080×1920), `bgm`,
+`bgm_volume`, `background`, `hook`, `shots[]`.
+
+- `background`: `type` (`solid`|`image`|`video`), `src`, `color`, `blur`, `dim`
+  (0–1), `fit`.
+- `hook`: `enabled`, `text`, `emphasis[]`, `subtext`, `position`
+  (`top`|`bottom`), `font_size_px`, `color`, `emphasis_color`, `font_name`,
+  `subtext_font_name`, `animate` (`fade`|`pop`).
+- `shots[]`: `index`, `image`, `start`, `end` (detik), `zoom` (Ken Burns; 1 =
+  diam), `caption`.
+
+Semua path relatif ke `studio/public` (diawali `/`). Builder:
+`.opencode/skills/screenshot-video/helpers/build_shot.py` (stdlib, tanpa pipeline).
+`Root.tsx` menormalisasi props partial, jadi field yang hilang tidak bikin crash.
+
 ## Konvensi & guardrail
 
-- **`story.json` = kontrak**. Jangan merombak schema tanpa update
+- **`story.json` = kontrak pipeline**. Jangan merombak schema tanpa update
   `pipeline/story.py`, `studio/src/types.ts`, dan seluruh story lama.
+- **`shot.json` = kontrak `ShotVideo`**. Schema-nya terpisah; jangan dicampur
+  dengan `story.json` dan jangan dibaca pipeline.
 - **Pipeline `_prune_job_dir`** mereset folder story tapi **mengawetkan**
   `script.txt` dan `terms.json` — output skill. Jangan hapus keduanya di main.
 - Skill `short-video-script` HANYA menulis `script.txt` + `terms.json`;
   jangan sentuh `audio/`, `material/`, `story.json`.
+- Skill `screenshot-video` HANYA menulis `shot/` + `shot.json` di folder story;
+  jangan sentuh `story.json`, `script.txt`, `terms.json`, `audio/`,
+  `material/`. Screenshot HARUS dari user — jangan scrape/render X/IG/TikTok.
+- `studio/public/backgrounds/` milik user: dipakai, tidak pernah dihapus.
 - Asset besar (`local_material/`, `studio/public/`, `out/`, `.venv/`) tidak
   ter-commit. `studio/public/stories/` pun saat ini belum di-track git —
   kalau diminta commit, ikutkan sesuai konteks.
